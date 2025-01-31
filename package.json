@@ -20,11 +20,19 @@
     "typescript": "^5.7.3"
   },
   "keywords": [
+    "dynamic forms builder",
+    "react forms builder",
+    "reusable form builder",
+    "form validation",
     "react",
     "forms",
     "tailwind",
     "zod",
     "react-hook-form"
   ],
-  "author": "Md Ariful Islam"
+  "author": "Md Ariful Islam",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/arifnextdev/zod-form-builder.git"
+  }
 }
