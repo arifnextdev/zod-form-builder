@@ -12,7 +12,8 @@
     "zod": "^3.24.1"
   },
   "scripts": {
-    "build": "tsc"
+    "build": "tsc",
+    "lint": "eslint . --ext .js,.ts,.tsx"
   },
   "devDependencies": {
     "@types/react": "^19.0.8",
