@@ -1,0 +1,30 @@
+{
+  "name": "zod-form-builder",
+  "version": "1.0.1",
+  "description": "A headless dynamic and reusable form builder for React",
+  "main": "dist/index.js",
+  "license": "MIT",
+  "dependencies": {
+    "@hookform/resolvers": "^3.10.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-hook-form": "^7.54.2",
+    "zod": "^3.24.1"
+  },
+  "scripts": {
+    "build": "tsc"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.8",
+    "@types/react-dom": "^19.0.3",
+    "typescript": "^5.7.3"
+  },
+  "keywords": [
+    "react",
+    "forms",
+    "tailwind",
+    "zod",
+    "react-hook-form"
+  ],
+  "author": "Md Ariful Islam"
+}
