@@ -1,13 +1,12 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { DefaultValues, FieldValues, useForm, useWatch } from "react-hook-form";
-import { useMemo, useState, memo } from "react";
+import { useMemo, useState, memo, useCallback } from "react";
 import Button from "./components/Button";
 import TextInput from "./components/TextInput";
 import { DynamicFormProps } from "./types";
 import { createSchema } from "./utils/createSchema";
 import selectInputs from "./components/selectInputs";
 
-// Memoize child components to prevent unnecessary re-renders
 const MemoizedTextInput = memo(TextInput);
 const MemoizedSelectInput = memo(selectInputs);
 
@@ -21,8 +20,9 @@ export function DynamicForms<T extends FieldValues>({
 }: DynamicFormProps<T>) {
   const [isLoading, setIsLoading] = useState(false);
 
-  // Memoize the schema creation to avoid unnecessary recalculations
-  const schema = useMemo(() => createSchema(fields), [fields]);
+  // Memoize schema and fields
+  const memoizedFields = useMemo(() => fields, [fields]);
+  const schema = useMemo(() => createSchema(memoizedFields), [memoizedFields]);
 
   const {
     register,
@@ -34,27 +34,40 @@ export function DynamicForms<T extends FieldValues>({
     defaultValues: defaultValues as DefaultValues<T>,
   });
 
-  // Use `useWatch` to watch specific fields instead of all fields
-  const formValues = useWatch({ control }) as T;
+  // Watch all fields to isolate conditional rendering
+  const watchedValues = useWatch({ control }) as T;
 
-  const handleFormSubmit = async (data: T) => {
-    setIsLoading(true);
-    try {
-      await onSubmit(data);
-    } catch (error) {
-      console.error("Form submission error:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  // Memoized error object to prevent unnecessary renders
+  const memoizedErrors = useMemo(() => errors, [errors]);
 
-  return (
-    <form onSubmit={handleSubmit(handleFormSubmit)} className={className}>
-      {fields.map((field) => {
+  // Memoized form submit function
+  const handleFormSubmit = useCallback(
+    async (data: T) => {
+      setIsLoading(true);
+      try {
+        await onSubmit(data);
+      } catch (error) {
+        console.error("Form submission error:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [onSubmit]
+  );
+
+  // Memoized register function to avoid re-renders
+  const memoizedRegister = useCallback(register, []);
+
+  // Render fields efficiently
+  const renderedFields = useMemo(
+    () =>
+      memoizedFields.map((field) => {
         const isVisible = field.conditional
-          ? field.conditional(formValues)
+          ? field.conditional(watchedValues)
           : true;
         if (!isVisible) return null;
+
+        const registerField = memoizedRegister(field.name);
 
         return (
           <div key={field.name}>
@@ -65,8 +78,8 @@ export function DynamicForms<T extends FieldValues>({
                 label={field.label}
                 id={field.name}
                 className={inputStyle}
-                {...register(field.name)}
-                error={errors[field.name]?.message as string}
+                {...registerField}
+                error={memoizedErrors[field.name]?.message as string}
               />
             ) : field.type === "select" && field.options ? (
               <MemoizedSelectInput
@@ -74,13 +87,25 @@ export function DynamicForms<T extends FieldValues>({
                 label={field.label}
                 className={field.className || inputStyle}
                 options={field.options}
-                {...register(field.name)}
-                error={errors[field.name]?.message as string}
+                {...registerField}
+                error={memoizedErrors[field.name]?.message as string}
               />
             ) : null}
           </div>
         );
-      })}
+      }),
+    [
+      memoizedFields,
+      watchedValues,
+      memoizedErrors,
+      memoizedRegister,
+      inputStyle,
+    ]
+  );
+
+  return (
+    <form onSubmit={handleSubmit(handleFormSubmit)} className={className}>
+      {renderedFields}
       <div className="pt-2">
         <Button type="submit" disabled={isLoading} className={buttonStyle}>
           {isLoading ? "Submitting..." : "Submit"}
