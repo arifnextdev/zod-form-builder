@@ -1,12 +1,15 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { FieldValues, useForm } from "react-hook-form";
-
-import { useMemo, useState } from "react";
+import { DefaultValues, FieldValues, useForm, useWatch } from "react-hook-form";
+import { useMemo, useState, memo } from "react";
 import Button from "./components/Button";
 import TextInput from "./components/TextInput";
-import SelectInput from "./components/selectInputs";
 import { DynamicFormProps } from "./types";
 import { createSchema } from "./utils/createSchema";
+import selectInputs from "./components/selectInputs";
+
+// Memoize child components to prevent unnecessary re-renders
+const MemoizedTextInput = memo(TextInput);
+const MemoizedSelectInput = memo(selectInputs);
 
 export function DynamicForms<T extends FieldValues>({
   defaultValues,
@@ -24,9 +27,15 @@ export function DynamicForms<T extends FieldValues>({
   const {
     register,
     handleSubmit,
-    watch,
+    control,
     formState: { errors },
-  } = useForm<T>({ resolver: zodResolver(schema), defaultValues });
+  } = useForm<T>({
+    resolver: zodResolver(schema),
+    defaultValues: defaultValues as DefaultValues<T>,
+  });
+
+  // Use `useWatch` to watch specific fields instead of all fields
+  const formValues = useWatch({ control }) as T;
 
   const handleFormSubmit = async (data: T) => {
     setIsLoading(true);
@@ -38,8 +47,6 @@ export function DynamicForms<T extends FieldValues>({
       setIsLoading(false);
     }
   };
-
-  const formValues = watch();
 
   return (
     <form onSubmit={handleSubmit(handleFormSubmit)} className={className}>
@@ -54,7 +61,7 @@ export function DynamicForms<T extends FieldValues>({
             {field.type === "text" ||
             field.type === "email" ||
             field.type === "password" ? (
-              <TextInput
+              <MemoizedTextInput
                 label={field.label}
                 id={field.name}
                 className={inputStyle}
@@ -62,10 +69,10 @@ export function DynamicForms<T extends FieldValues>({
                 error={errors[field.name]?.message as string}
               />
             ) : field.type === "select" && field.options ? (
-              <SelectInput
+              <MemoizedSelectInput
                 id={field.name}
                 label={field.label}
-                className={field.className}
+                className={field.className || inputStyle}
                 options={field.options}
                 {...register(field.name)}
                 error={errors[field.name]?.message as string}
@@ -74,7 +81,7 @@ export function DynamicForms<T extends FieldValues>({
           </div>
         );
       })}
-      <div className=" pt-2">
+      <div className="pt-2">
         <Button type="submit" disabled={isLoading} className={buttonStyle}>
           {isLoading ? "Submitting..." : "Submit"}
         </Button>
